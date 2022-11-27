@@ -11,9 +11,9 @@
 #include <string.h>
 #include <ncurses/ncurses.h>
 
-#define WORDLENGTH 11
-#define MAXWORDS 100
-#define DEBUGM 1 // Set this to 0 to disable debug output
+#define WORDLENGTH 20
+#define MAXWORDS 2000
+#define DEBUGM 0 // Set this to 0 to disable debug output
 
 #define AVATAR '*'
 #define EMPTY_SPACE ' '
@@ -37,7 +37,7 @@ void draw_character(int y, int x, char use);
 int read_words(char *WL[MAXWORDS], char *file_name);
 
 // writes words from user into the file
-int write_words(char *file_name);
+void write_words(char *file_name);
 
 // modifies str to trim white space off the right side
 // DO NOT MODIFY THIS FUNCTION
@@ -45,12 +45,18 @@ void trimws(char *str);
 
 int main(int argc, char *argv[])
 {
-    // compile with gcc final.c -o final -lncurses
-    // run with ./ds4rd.exe -d 054c:09cc -D DS4_BT -t -b -j -bt | ./final wordlist.txt
+    // compile with gcc final.c -o final -lncurses ****************************************
+    // run with ./final wordlist.txt ******************************************************
     char *wordlist[MAXWORDS];
-    int wordcount;
+    int wordcount, minWordLen;
     char playState;
     int i;
+
+    if (argc < 2)
+    {
+        printf("Please provide an argument\n");
+        return 1;
+    }
 
     wordcount = read_words(wordlist, argv[1]);
 
@@ -67,21 +73,30 @@ int main(int argc, char *argv[])
     printf("Hello, this is a typing game. You will need to type the words as they appear.\n");
     printf("Would you like to play or add a word?\n");
     printf("You currently have %d words that can be used. (p/w)\n", wordcount);
-    scanf(" %c", playState);
+    scanf(" %c", &playState);
 
-    if (playState == 'w')
+    if (playState == 'w') // code for adding words to the list
     {
+        write_words(argv[1]);
+        wordcount = read_words(wordlist, argv[1]);
+        printf("Would you like to play the game or quit the program? (p/q)\n");
+        scanf(" %c", &playState);
     }
 
-    /* 	Setup screen for Ncurses
-    The initscr functionis used to setup the Ncurses environment
-    The refreash function needs to be called to refresh the outputs
-    to the screen */
-    initscr();
-    refresh();
+    if (playState == 'p') // code for pllaying the game
+    {
+        printf("What would you like your minimum word length to be?\n");
+        scanf(" %d", &minWordLen);
+        /* 	Setup screen for Ncurses
+        The initscr functionis used to setup the Ncurses environment
+        The refreash function needs to be called to refresh the outputs
+        to the screen */
+        initscr();
+        refresh();
 
-    // close the window and end the program
-    endwin();
+        // close the window and end the program
+        endwin();
+    }
     return 0;
 }
 
@@ -134,4 +149,27 @@ int read_words(char *WL[MAXWORDS], char *file_name)
     }
     fclose(fp);
     return numread;
+}
+
+// DO NOT MODIFY THIS FUNCTION!
+void write_words(char *file_name)
+{
+    char newWord[WORDLENGTH];
+    char addWord;
+    FILE *fp = fopen(file_name, "a");
+    if (fp == NULL)
+    {
+        printf("Error!");
+        exit(1);
+    }
+    do
+    {
+        printf("What word would you like to add?\n");
+        scanf(" %s", newWord);
+        fprintf(fp, "\n%s", newWord);
+        printf("Would you like to add any more words? (y/n)\n");
+        scanf(" %c", &addWord);
+        fflush(stdin);
+    } while (addWord == 'y');
+    fclose(fp);
 }
