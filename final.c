@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 #include <ncurses/ncurses.h>
 
 #define WORDLENGTH 20
@@ -28,10 +29,6 @@
 // tehm below the main function////
 /////////////////////////////////
 
-/*	PRE: 0 < x < COLUMNS, 0 < y < ROWS, 0 < use < 255
-    POST: Draws character use to the screen and position x,y */
-void draw_character(int y, int x, char use);
-
 // Reads words from the file into WL and trims the whitespace off of the end
 // DO NOT MODIFY THIS FUNCTION
 int read_words(char *WL[MAXWORDS], char *file_name);
@@ -47,10 +44,30 @@ int main(int argc, char *argv[])
 {
     // compile with gcc final.c -o final -lncurses ****************************************
     // run with ./final wordlist.txt ******************************************************
-    char *wordlist[MAXWORDS];
-    int wordcount, minWordLen;
-    char playState;
     int i;
+    char *wordlist[MAXWORDS];
+    char *words[100];
+    int wordsYLocation[100];
+    int wordsXLocation[100];
+    for (i = 0; i < 30; i++)
+    {
+        words[i] = "z";
+        wordsYLocation[i] = 1;
+        wordsXLocation[i] = 0;
+    }
+    char enteredWord[20];
+    int pos = 0;
+    int word = 0;
+    int wordcount, minWordLen;
+    int tempPos = 0;
+    char playState;
+    int stop = 0;
+    time_t timer = 0;
+    time_t timer2 = 0;
+    time_t tempTimer = 0;
+    double timeTillWord = 1;
+
+    srand(time(NULL));
 
     if (argc < 2)
     {
@@ -87,15 +104,123 @@ int main(int argc, char *argv[])
     {
         printf("What would you like your minimum word length to be?\n");
         scanf(" %d", &minWordLen);
+
         /* 	Setup screen for Ncurses
         The initscr functionis used to setup the Ncurses environment
         The refreash function needs to be called to refresh the outputs
         to the screen */
         initscr();
         refresh();
+        // print out the boarder for the game board
+        mvprintw(0, 0, "______________________________________________________________");
+        for (i = 1; i <= 20; i++)
+        {
+            mvprintw(i, 0, "|");
+            mvprintw(i, 61, "|");
+        }
+        mvprintw(21, 0, "______________________________________________________________");
+        mvprintw(22, 0, "______________________________________________________________");
+        refresh();
+
+        // add words *************************************************
+        // get new word
+        word = (rand() % wordcount) + 1;
+        while (strlen(wordlist[word]) < minWordLen)
+        {
+            word = (rand() % wordcount) + 1;
+        }
+
+        // get word x position
+        tempPos = (rand() % 60) + 1;
+        while (tempPos > (60 - (strlen(wordlist[word]))))
+        {
+            tempPos = (rand() % 60) + 1;
+        }
+
+        wordsXLocation[pos] = tempPos;
+        // print word
+        mvprintw(1, wordsXLocation[pos], wordlist[word]);
+        refresh();
+
+        // store word
+        words[pos] = wordlist[word];
+        wordsYLocation[pos] = 1;
+        pos++;
+        refresh();
+        timer = time(NULL);
+
+        do
+        {
+            timer2 = time(NULL);
+            // take user input ***************************************************
+            mvprintw(25, 0, "Type here: ");
+            scanw(" %s", enteredWord);
+            mvprintw(25, 11, "                                                         ");
+
+            // check if input is equal to any words on the screen
+            for (i = 0; i <= pos; i++)
+            {
+                if (strcmp(enteredWord, words[i]) == 0)
+                {
+                    mvprintw(wordsYLocation[i], 1, "                                                            ");
+                    words[i] = "z";
+                    wordsYLocation[i] = 1;
+                    wordsXLocation[i] = 0;
+                }
+            }
+
+            tempTimer = (time(NULL) - timer2);
+
+            while (tempTimer > 0)
+            {
+                tempTimer -= timeTillWord;
+                // move words
+                for (i = 0; i <= pos; i++)
+                {
+                    mvprintw(wordsYLocation[i], 1, "                                                            ");
+                    wordsYLocation[i] += 1;
+                    if (words[i] != "z")
+                        mvprintw(wordsYLocation[i], wordsXLocation[i], words[i]);
+                    if (wordsYLocation[i] == 21)
+                        stop = 1;
+                }
+
+                // add words
+                // get new word
+                word = (rand() % wordcount) + 1;
+                while (strlen(wordlist[word]) < minWordLen)
+                {
+                    word = (rand() % wordcount) + 1;
+                }
+
+                // get word x position
+                tempPos = (rand() % 60) + 1;
+                while (tempPos > (60 - (strlen(wordlist[word]))))
+                {
+                    tempPos = (rand() % 60) + 1;
+                }
+
+                wordsXLocation[pos] = tempPos;
+                // print word
+                mvprintw(1, wordsXLocation[pos], wordlist[word]);
+                refresh();
+
+                // store word
+                words[pos] = wordlist[word];
+                wordsYLocation[pos] = 1;
+                pos++;
+                refresh();
+            }
+
+            if (timeTillWord != 0)
+                timeTillWord -= .01;
+            refresh();
+            fflush(stdin);
+        } while (!stop); // change
 
         // close the window and end the program
         endwin();
+        printf("You lasted %d seconds!", ((time(NULL) - timer)));
     }
     return 0;
 }
@@ -103,16 +228,6 @@ int main(int argc, char *argv[])
 ///////////////////////////////////////
 // User Defined Functions' Definition//
 /////////////////////////////////////
-
-/* 	PRE: 0 < x < COLUMNS, 0 < y < ROWS, 0 < use < 255
-    POST: Draws character use to the screen and position x,y
-    THIS CODE FUNCTIONS FOR PLACING THE AVATAR AS PROVIDED.
-    DO NOT NEED TO CHANGE THIS FUNCTION. */
-void draw_character(int y, int x, char use)
-{
-    mvaddch(y, x, use);
-    refresh();
-}
 
 // DO NOT MODIFY THIS FUNCTION!
 void trimws(char *str)
